@@ -1,23 +1,40 @@
 ```
-# Xcode
-*.xcworkspace
-xcuserdata/
-DerivedData/
-
-# Swift build files
-*.swiftmodule
-*.swiftdoc
-*.swiftdeps
-
 # Build artifacts
-build/
-.debug/
-.release/
+*.o
+*.obj
+*.a
+*.lib
+*.dylib
+*.so
+*.dll
+*.exe
+*.out
 
-# Environment
+# Xcode
+*.xcodeproj/
+*.xcworkspace/
+*.swiftmodule/
+*.hmap
+*.ipa
+*.app/
+
+# iOS
+build/
+DerivedData/
+*.mobileprovision
+*.entitlements
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.swp
+*.swo
+
+# Environment variables
 .env
 .env.local
-.env.*
+*.env.*
 
 # Dependencies
 Pods/

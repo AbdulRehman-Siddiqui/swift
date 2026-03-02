@@ -2,38 +2,22 @@ import UIKit
 
 final class RecBadgeView: UIView {
     private let dot = UIView()
-    private let label = UILabel()
 
     override init(frame: CGRect) {
         super.init(frame: frame)
-        backgroundColor = .black
-        layer.borderWidth = 1
-        layer.borderColor = UIColor.systemRed.cgColor
-        layer.cornerRadius = 12
+        backgroundColor = .clear  // Make background transparent
 
         dot.backgroundColor = .systemRed
-        dot.layer.cornerRadius = 4
+        dot.layer.cornerRadius = 2  // Make it a smaller red dot
 
-        label.text = "REC"
-        label.textColor = .systemRed
-        label.font = UIFont.systemFont(ofSize: 12, weight: .semibold)
-
-        let h = UIStackView(arrangedSubviews: [dot, label])
-        h.axis = .horizontal
-        h.spacing = 6
-        h.alignment = .center
-
-        addSubview(h)
-        h.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(dot)
         dot.translatesAutoresizingMaskIntoConstraints = false
 
         NSLayoutConstraint.activate([
-            dot.widthAnchor.constraint(equalToConstant: 8),
-            dot.heightAnchor.constraint(equalToConstant: 8),
-            h.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 8),
-            h.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -8),
-            h.topAnchor.constraint(equalTo: topAnchor, constant: 6),
-            h.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -6),
+            dot.widthAnchor.constraint(equalToConstant: 4),
+            dot.heightAnchor.constraint(equalToConstant: 4),
+            centerXAnchor.constraint(equalTo: trailingAnchor, constant: -6),  // Position near right edge
+            centerYAnchor.constraint(equalTo: topAnchor, constant: 6),      // Position near top
         ])
     }
 
