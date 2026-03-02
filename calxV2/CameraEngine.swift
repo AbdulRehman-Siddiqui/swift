@@ -12,6 +12,10 @@ final class CameraEngine: NSObject {
 
     private(set) var isConfigured = false
     private(set) var isRecording = false
+    
+    // Store device positions for lens switching
+    private var wideCamera: AVCaptureDevice?
+    private var ultraWideCamera: AVCaptureDevice?
 
     func requestPermissions(completion: @escaping (Bool) -> Void) {
         let group = DispatchGroup()
@@ -29,7 +33,11 @@ final class CameraEngine: NSObject {
             self.session.beginConfiguration()
             self.session.sessionPreset = .high
             do {
-                guard let cam = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back) else {
+                // Find available cameras
+                self.wideCamera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+                self.ultraWideCamera = AVCaptureDevice.default(.builtInUltraWideCamera, for: .video, position: .back)
+                
+                guard let cam = self.wideCamera else {
                     self.session.commitConfiguration()
                     completion(false, "Back camera not found")
                     return
@@ -93,6 +101,22 @@ final class CameraEngine: NSObject {
 
     func setZoom(_ zoom: CGFloat) {
         queue.async {
+            // Determine which camera to use based on zoom level
+            let targetCamera: AVCaptureDevice?
+            if zoom <= 1.0 {
+                targetCamera = self.wideCamera  // Use wide camera for 1x and below
+            } else if zoom >= 2.0 {
+                targetCamera = self.ultraWideCamera  // Use ultra-wide for 2x and above
+            } else {
+                targetCamera = self.wideCamera  // Use wide camera for 1x-2x range
+            }
+            
+            // Switch camera input if needed
+            if let newCamera = targetCamera, newCamera != self.videoInput?.device {
+                self.switchCameraInput(to: newCamera)
+            }
+            
+            // Apply zoom factor to current device
             guard let device = self.videoInput?.device else { return }
             let maxZ = device.activeFormat.videoMaxZoomFactor
             let z = max(1.0, min(zoom, maxZ))
@@ -101,6 +125,27 @@ final class CameraEngine: NSObject {
                 device.videoZoomFactor = z
                 device.unlockForConfiguration()
             } catch { }
+        }
+    }
+    
+    private func switchCameraInput(to newCamera: AVCaptureDevice) {
+        guard let currentInput = self.videoInput else { return }
+        
+        // Remove current input
+        self.session.removeInput(currentInput)
+        
+        do {
+            let newInput = try AVCaptureDeviceInput(device: newCamera)
+            if self.session.canAddInput(newInput) {
+                self.session.addInput(newInput)
+                self.videoInput = newInput
+            } else {
+                // Re-add the original input if the new one can't be added
+                self.session.addInput(currentInput)
+            }
+        } catch {
+            // Re-add the original input if there's an error
+            self.session.addInput(currentInput)
         }
     }
 

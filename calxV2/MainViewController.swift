@@ -23,6 +23,8 @@ final class MainViewController: UIViewController {
         setupUI()
         setupGestures()
         setupLifecycleObservers()
+        // Initially start in OLED mode when app opens
+        mode = .oled
         applyMode()
 
         CameraEngine.shared.requestPermissions { [weak self] ok in
@@ -34,9 +36,6 @@ final class MainViewController: UIViewController {
                 if ok {
                     CameraEngine.shared.startSession()
                     DispatchQueue.main.async { self.attachPreviewIfNeeded() }
-                    // Start recording automatically when the app opens
-                    self.mode = .camera
-                    self.toggleRecording()
                 }
             }
         }
@@ -181,7 +180,11 @@ final class MainViewController: UIViewController {
         switch mode {
         case .oled:
             // Single tap starts recording but keeps pitch black (OLED mode)
-            toggleRecording()
+            if !CameraEngine.shared.isRecording {
+                CameraEngine.shared.startRecording { [weak self] ok, msg in
+                    print("[calxV2] rec start -> \(ok) \(msg ?? "nil")")
+                }
+            }
         case .camera:
             toggleRecording()
         case .utility:
@@ -192,8 +195,10 @@ final class MainViewController: UIViewController {
     @objc private func onDoubleTap() {
         switch mode {
         case .oled:
-            // Double tap shows preview
-            mode = .camera
+            // Double tap stops recording and stays in OLED mode
+            if CameraEngine.shared.isRecording {
+                CameraEngine.shared.stopRecording()
+            }
         case .camera:
             // Stop recording and return to OLED
             stopRecordingIfNeeded()
@@ -218,16 +223,29 @@ final class MainViewController: UIViewController {
         switch mode {
         case .oled:
             // Tap and hold to show preview (switch to camera mode)
-            if gr.state == .began { mode = .camera }
+            if gr.state == .began { 
+                mode = .camera 
+                // Update controls to reflect current recording state
+                controls.setRecording(CameraEngine.shared.isRecording)
+            }
+            else if gr.state == .ended || gr.state == .cancelled {
+                // Return to OLED mode when long press ends
+                mode = .oled
+            }
         case .camera:
             // Tap and hold to switch back to OLED while continuing recording
             if gr.state == .began {
-                stopRecordingIfNeeded()
                 mode = .oled
             }
         case .utility:
             // In utility mode, long press returns to camera
-            if gr.state == .began { mode = .camera }
+            if gr.state == .began { 
+                mode = .camera 
+                controls.setRecording(CameraEngine.shared.isRecording)
+            }
+            else if gr.state == .ended || gr.state == .cancelled {
+                mode = .oled
+            }
         }
     }
 
