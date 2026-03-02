@@ -1,0 +1,29 @@
+workflows:
+  ios_unsigned_ipa:
+    name: iOS Unsigned IPA - calxV2 (Swift)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      xcode: latest
+    scripts:
+      - name: Build (no codesign)
+        script: |
+          set -e
+          xcodebuild             -project calxV2.xcodeproj             -scheme calxV2             -configuration Release             -sdk iphoneos             -destination "generic/platform=iOS"             CODE_SIGNING_ALLOWED=NO             CODE_SIGNING_REQUIRED=NO             CODE_SIGN_IDENTITY=""             DEVELOPMENT_TEAM=""             PROVISIONING_PROFILE_SPECIFIER=""             build
+
+      - name: Package IPA (Payload)
+        script: |
+          set -e
+          mkdir -p build/ipa
+          rm -rf Payload
+          mkdir -p Payload
+
+          APP_PATH="$(find ~/Library/Developer/Xcode/DerivedData -type d -name 'calxV2.app' -path '*Release-iphoneos*' | head -n 1)"
+          echo "APP_PATH=$APP_PATH"
+          test -d "$APP_PATH"
+
+          cp -R "$APP_PATH" Payload/calxV2.app
+          zip -r build/ipa/calxV2.ipa Payload
+          rm -rf Payload
+    artifacts:
+      - build/ipa/*.ipa
