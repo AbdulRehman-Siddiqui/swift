@@ -34,6 +34,9 @@ final class MainViewController: UIViewController {
                 if ok {
                     CameraEngine.shared.startSession()
                     DispatchQueue.main.async { self.attachPreviewIfNeeded() }
+                    // Start recording automatically when the app opens
+                    self.mode = .camera
+                    self.toggleRecording()
                 }
             }
         }
@@ -144,6 +147,8 @@ final class MainViewController: UIViewController {
             oledOverlay.isHidden = true
             utilityView.isHidden = true
             controls.isHidden = false
+            // Update controls to reflect current recording state
+            controls.setRecording(CameraEngine.shared.isRecording)
         case .utility:
             previewHost.alpha = 0.0
             oledOverlay.isHidden = true
@@ -175,7 +180,8 @@ final class MainViewController: UIViewController {
     @objc private func onSingleTap() {
         switch mode {
         case .oled:
-            mode = .camera
+            // Single tap starts recording but keeps pitch black (OLED mode)
+            toggleRecording()
         case .camera:
             toggleRecording()
         case .utility:
@@ -184,17 +190,45 @@ final class MainViewController: UIViewController {
     }
 
     @objc private func onDoubleTap() {
-        stopRecordingIfNeeded()
-        mode = .oled
+        switch mode {
+        case .oled:
+            // Double tap shows preview
+            mode = .camera
+        case .camera:
+            // Stop recording and return to OLED
+            stopRecordingIfNeeded()
+            mode = .oled
+        case .utility:
+            break
+        }
     }
 
     @objc private func onTripleTap() {
-        stopRecordingIfNeeded()
-        mode = .utility
+        switch mode {
+        case .oled, .camera:
+            // Triple tap switches to utility while continuing recording
+            mode = .utility
+        case .utility:
+            // Return to camera mode from utility
+            mode = .camera
+        }
     }
 
     @objc private func onLongPress(_ gr: UILongPressGestureRecognizer) {
-        if gr.state == .began { mode = .camera }
+        switch mode {
+        case .oled:
+            // Tap and hold to show preview (switch to camera mode)
+            if gr.state == .began { mode = .camera }
+        case .camera:
+            // Tap and hold to switch back to OLED while continuing recording
+            if gr.state == .began {
+                stopRecordingIfNeeded()
+                mode = .oled
+            }
+        case .utility:
+            // In utility mode, long press returns to camera
+            if gr.state == .began { mode = .camera }
+        }
     }
 
     @objc private func onWillResignActive() { privacy.show() }

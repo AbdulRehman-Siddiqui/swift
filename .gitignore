@@ -1,5 +1,25 @@
-.DS_Store
-build/
+```
+# Xcode
+*.xcworkspace
+xcuserdata/
 DerivedData/
-*.xcuserstate
-*.xcuserdata/
+
+# Swift build files
+*.swiftmodule
+*.swiftdoc
+*.swiftdeps
+
+# Build artifacts
+build/
+.debug/
+.release/
+
+# Environment
+.env
+.env.local
+.env.*
+
+# Dependencies
+Pods/
+Carthage/
+```
